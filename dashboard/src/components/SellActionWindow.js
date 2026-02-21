@@ -6,22 +6,22 @@ import GeneralContext from "./GeneralContext";
 
 import "./BuyActionWindow.css";
 
-const BuyActionWindow = ({ uid }) => {
+const SellActionWindow = ({ uid }) => {
   const [stockQuantity, setStockQuantity] = useState(1);
   const [stockPrice, setStockPrice] = useState(0.0);
   const context = useContext(GeneralContext);
 
-  const handleBuyClick = async () => {
+  const handleSellClick = async () => {
     try {
       await api.post("/newOrder", {
         name: uid,
         qty: stockQuantity,
         price: stockPrice,
-        mode: "BUY",
+        mode: "SELL",
       });
       
       alert("Order placed successfully");
-      context.closeBuyWindow();
+      context.closeSellWindow();
     } catch (error) {
       console.error("Order failed:", error);
       alert("Order failed");
@@ -29,11 +29,11 @@ const BuyActionWindow = ({ uid }) => {
   };
 
   const handleCancelClick = () => {
-    context.closeBuyWindow();
+    context.closeSellWindow();
   };
 
   return (
-    <div className="container" id="buy-window" draggable="true">
+    <div className="container" id="sell-window" draggable="true">
       <div className="regular-order">
         <div className="inputs">
           <fieldset>
@@ -63,8 +63,8 @@ const BuyActionWindow = ({ uid }) => {
       <div className="buttons">
         <span>Margin required ₹140.65</span>
         <div>
-          <button className="btn btn-blue" onClick={handleBuyClick}>
-            Buy
+          <button className="btn btn-blue" onClick={handleSellClick}>
+            Sell
           </button>
           <button className="btn btn-grey" onClick={handleCancelClick}>
             Cancel
@@ -75,4 +75,4 @@ const BuyActionWindow = ({ uid }) => {
   );
 };
 
-export default BuyActionWindow;
+export default SellActionWindow;
