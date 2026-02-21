@@ -22,10 +22,13 @@ const getForecast = async (symbol) => {
 
     return {
       symbol: response.data.symbol,
+      stock_name: response.data.stock_name || null,
       prediction: {
         next_close: response.data.predicted_close,
         generated_at: new Date().toISOString(),
       },
+      last_close: response.data.last_close || null,
+      history: Array.isArray(response.data.history) ? response.data.history : [],
       metrics: response.data.metrics || { rmse: null },
       model_info: {
         trained_at: response.data.metadata?.trained_at,

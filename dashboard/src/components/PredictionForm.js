@@ -4,7 +4,7 @@ const PredictionForm = ({ onSearch, loading }) => {
   const [symbol, setSymbol] = useState("");
 
   const handleChange = (e) => {
-    setSymbol(e.target.value.toUpperCase().slice(0, 10));
+    setSymbol(e.target.value.toUpperCase().slice(0, 15));
   };
 
   const handleSubmit = (e) => {
@@ -37,7 +37,7 @@ const PredictionForm = ({ onSearch, loading }) => {
             fontSize: "14px",
             fontFamily: "inherit",
           }}
-          maxLength="10"
+          maxLength="15"
         />
         <button
           type="submit"

@@ -53,9 +53,8 @@ const AiPage = () => {
 
         {loading && (
           <div className="loading-state">
-            <p style={{ textAlign: "center", marginTop: "20px" }}>
-              🔄 Analyzing stock data...
-            </p>
+            <div className="loading-spinner" />
+            <p className="loading-text">Analyzing stock data...</p>
           </div>
         )}
 

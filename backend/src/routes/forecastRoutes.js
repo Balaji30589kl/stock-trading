@@ -21,10 +21,10 @@ const validateForecastRequest = (req, res, next) => {
     });
   }
 
-  if (symbol.length > 10) {
+  if (symbol.length > 15) {
     return res.status(400).json({
       success: false,
-      message: "Symbol must be 10 characters or less",
+      message: "Symbol must be 15 characters or less",
     });
   }
 

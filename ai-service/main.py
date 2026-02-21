@@ -7,7 +7,7 @@ app = FastAPI(title="AI Stock Prediction Service", version="1.0.0")
 
 
 class PredictRequest(BaseModel):
-    symbol: str = Field(..., min_length=1, max_length=10)
+    symbol: str = Field(..., min_length=1, max_length=15)
 
 
 class PredictMetrics(BaseModel):
@@ -24,9 +24,17 @@ class PredictMetadata(BaseModel):
     model_version: str | None
 
 
+class HistoryPoint(BaseModel):
+    date: str
+    close: float
+
+
 class PredictResponse(BaseModel):
     symbol: str
+    stock_name: str | None
     predicted_close: float
+    last_close: float | None
+    history: list[HistoryPoint]
     metrics: PredictMetrics
     metadata: PredictMetadata
 

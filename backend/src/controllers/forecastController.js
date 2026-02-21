@@ -24,10 +24,13 @@ const getForecast = async (req, res) => {
       success: true,
       data: {
         symbol: forecast.symbol,
+        stock_name: forecast.stock_name,
         prediction: {
           next_close: forecast.prediction.next_close,
           confidence_metric: `RMSE: ${(forecast.metrics.rmse || 0).toFixed(2)}`,
         },
+        last_close: forecast.last_close,
+        history: forecast.history,
         metrics: forecast.metrics,
         model_info: forecast.model_info,
         generated_at: forecast.prediction.generated_at,

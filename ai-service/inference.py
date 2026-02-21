@@ -4,7 +4,14 @@ from typing import Dict, Optional
 import numpy as np
 import torch
 
-from data import minmax_inverse, minmax_scale_with, prepare_data, split_train_test
+from data import (
+    fetch_history,
+    fetch_stock_name,
+    minmax_inverse,
+    minmax_scale_with,
+    prepare_data,
+    split_train_test,
+)
 from trainer import (
     DEFAULT_SEED,
     build_metadata,
@@ -74,9 +81,15 @@ def predict_next_close(symbol: str, lookback: int = 60) -> Dict[str, object]:
 
     predicted = minmax_inverse(pred_scaled, artifacts["vmin"], artifacts["vmax"])
 
+    stock_name = fetch_stock_name(symbol)
+    history = fetch_history(symbol, period="6mo")
+
     response = {
         "symbol": symbol,
+        "stock_name": stock_name,
         "predicted_close": float(round(predicted, 2)),
+        "last_close": prepared.get("last_close"),
+        "history": history,
         "metrics": {"rmse": artifacts["metadata"].get("rmse")},
         "metadata": {
             "trained_at": artifacts["metadata"].get("trained_at"),

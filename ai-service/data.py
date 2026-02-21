@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Dict, Tuple
 
 import numpy as np
@@ -11,7 +10,14 @@ DEFAULT_PERIOD = "2y"
 
 def fetch_close_series(symbol: str, period: str = DEFAULT_PERIOD) -> pd.Series:
     df = yf.download(symbol, period=period, interval="1d", progress=False)
-    if df.empty or "Close" not in df.columns:
+    if df.empty:
+        raise ValueError("No data returned for symbol")
+    
+    # Handle MultiIndex columns from yfinance
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    
+    if "Close" not in df.columns:
         raise ValueError("No data returned for symbol")
     return df["Close"].dropna()
 
@@ -76,3 +82,35 @@ def prepare_data(symbol: str, lookback: int, period: str = DEFAULT_PERIOD) -> Di
         "data_end_date": close_series.index[-1].date().isoformat(),
         "last_close": float(values[-1].item()),
     }
+
+
+def fetch_stock_name(symbol: str) -> str | None:
+    try:
+        info = yf.Ticker(symbol).info
+    except Exception:
+        return None
+    return info.get("shortName") or info.get("longName")
+
+
+def fetch_history(symbol: str, period: str = "6mo") -> list[Dict[str, object]]:
+    df = yf.download(symbol, period=period, interval="1d", progress=False)
+    if df.empty:
+        return []
+    
+    # Handle MultiIndex columns from yfinance
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    
+    if "Close" not in df.columns:
+        return []
+
+    closes = df["Close"].dropna()
+    history = []
+    for idx, value in closes.items():
+        history.append(
+            {
+                "date": idx.date().isoformat(),
+                "close": float(round(value, 2)),
+            }
+        )
+    return history
