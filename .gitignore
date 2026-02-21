@@ -18,6 +18,9 @@ __pycache__/
 # Virtual environments
 venv/
 env/
+.venv/
+.venv*/
+ai-service/.venv/
 
 # Environment files
 .env
@@ -30,6 +33,7 @@ env/
 *.h5
 models/
 scalers/
+ai-service/artifacts/
 
 # OS files
 .DS_Store
