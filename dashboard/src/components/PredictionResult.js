@@ -36,28 +36,62 @@ const PredictionResult = ({ prediction }) => {
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min || 1;
-    const width = 300;
-    const height = 120;
-    const padding = 6;
+    
+    // Chart dimensions with proper padding for axes
+    const width = 600;
+    const height = 300;
+    const paddingLeft = 60;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 40;
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
 
+    // Generate line points
     const points = values
       .map((value, index) => {
-        const x =
-          (index / (values.length - 1)) * (width - padding * 2) + padding;
-        const y =
-          height -
-          padding -
-          ((value - min) / range) * (height - padding * 2);
+        const x = paddingLeft + (index / (values.length - 1)) * chartWidth;
+        const y = paddingTop + chartHeight - ((value - min) / range) * chartHeight;
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(" ");
 
+    // Generate gradient area points
+    const areaPoints = `${paddingLeft},${paddingTop + chartHeight} ${points} ${paddingLeft + chartWidth},${paddingTop + chartHeight}`;
+
+    // Y-axis labels (5 levels)
+    const yAxisLabels = [];
+    for (let i = 0; i <= 4; i++) {
+      const value = min + (range * i) / 4;
+      const y = paddingTop + chartHeight - (i / 4) * chartHeight;
+      yAxisLabels.push({ value: value.toFixed(2), y });
+    }
+
+    // X-axis labels (show every nth date to avoid crowding)
+    const xAxisLabels = [];
+    const labelCount = Math.min(6, history.length);
+    for (let i = 0; i < labelCount; i++) {
+      const index = Math.floor((i / (labelCount - 1)) * (history.length - 1));
+      const x = paddingLeft + (index / (values.length - 1)) * chartWidth;
+      const date = history[index]?.date || "";
+      const shortDate = date ? date.substring(5) : ""; // MM-DD format
+      xAxisLabels.push({ label: shortDate, x });
+    }
+
     return {
       points,
+      areaPoints,
       min: min.toFixed(2),
       max: max.toFixed(2),
-      startLabel: history[0]?.date,
-      endLabel: history[history.length - 1]?.date,
+      yAxisLabels,
+      xAxisLabels,
+      width,
+      height,
+      paddingLeft,
+      paddingTop,
+      paddingBottom,
+      chartWidth,
+      chartHeight,
     };
   }, [prediction]);
 
@@ -180,25 +214,140 @@ const PredictionResult = ({ prediction }) => {
           marginBottom: "16px",
         }}
       >
-        <p style={{ margin: "0 0 12px 0", fontWeight: "bold", color: "#374151" }}>
-          Price History (6 months)
+        <p style={{ margin: "0 0 16px 0", fontWeight: "bold", color: "#374151", fontSize: "15px" }}>
+          📊 Price History (6 months)
         </p>
         {chart ? (
-          <div style={{ marginBottom: "16px" }}>
-            <svg className="history-chart" viewBox="0 0 300 120" preserveAspectRatio="none">
+          <div style={{ marginBottom: "20px" }}>
+            <svg 
+              className="professional-chart" 
+              viewBox={`0 0 ${chart.width} ${chart.height}`}
+              style={{ width: "100%", height: "auto", maxHeight: "300px" }}
+            >
+              {/* Grid lines */}
+              <defs>
+                <linearGradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+              
+              {/* Horizontal grid lines */}
+              {chart.yAxisLabels.map((label, i) => (
+                <line
+                  key={`hgrid-${i}`}
+                  x1={chart.paddingLeft}
+                  y1={label.y}
+                  x2={chart.paddingLeft + chart.chartWidth}
+                  y2={label.y}
+                  stroke="#e5e7eb"
+                  strokeWidth="1"
+                  strokeDasharray="3,3"
+                />
+              ))}
+              
+              {/* Y-axis */}
+              <line
+                x1={chart.paddingLeft}
+                y1={chart.paddingTop}
+                x2={chart.paddingLeft}
+                y2={chart.paddingTop + chart.chartHeight}
+                stroke="#9ca3af"
+                strokeWidth="1.5"
+              />
+              
+              {/* X-axis */}
+              <line
+                x1={chart.paddingLeft}
+                y1={chart.paddingTop + chart.chartHeight}
+                x2={chart.paddingLeft + chart.chartWidth}
+                y2={chart.paddingTop + chart.chartHeight}
+                stroke="#9ca3af"
+                strokeWidth="1.5"
+              />
+              
+              {/* Area under the line */}
+              <polygon
+                fill="url(#areaGradient)"
+                points={chart.areaPoints}
+              />
+              
+              {/* Price line */}
               <polyline
                 fill="none"
-                stroke="#2563eb"
-                strokeWidth="2"
+                stroke="#3b82f6"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 points={chart.points}
               />
+              
+              {/* Y-axis labels */}
+              {chart.yAxisLabels.map((label, i) => (
+                <text
+                  key={`ylabel-${i}`}
+                  x={chart.paddingLeft - 8}
+                  y={label.y + 4}
+                  textAnchor="end"
+                  fontSize="11"
+                  fill="#6b7280"
+                  fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                >
+                  ₹{label.value}
+                </text>
+              ))}
+              
+              {/* X-axis labels */}
+              {chart.xAxisLabels.map((label, i) => (
+                <text
+                  key={`xlabel-${i}`}
+                  x={label.x}
+                  y={chart.paddingTop + chart.chartHeight + 20}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="#6b7280"
+                  fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                >
+                  {label.label}
+                </text>
+              ))}
+              
+              {/* Chart title */}
+              <text
+                x={chart.paddingLeft + chart.chartWidth / 2}
+                y={chart.paddingTop + chart.chartHeight + 35}
+                textAnchor="middle"
+                fontSize="10"
+                fill="#9ca3af"
+                fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+              >
+                Date (MM-DD)
+              </text>
+              
+              <text
+                x={15}
+                y={chart.paddingTop + chart.chartHeight / 2}
+                textAnchor="middle"
+                fontSize="10"
+                fill="#9ca3af"
+                fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                transform={`rotate(-90, 15, ${chart.paddingTop + chart.chartHeight / 2})`}
+              >
+                Price (₹)
+              </text>
             </svg>
-            <div className="chart-labels">
-              <span>{chart.startLabel}</span>
-              <span>{chart.endLabel}</span>
-            </div>
-            <div className="chart-range">
-              Low: ₹{chart.min} | High: ₹{chart.max}
+            <div style={{ 
+              marginTop: "12px", 
+              padding: "8px 12px", 
+              backgroundColor: "#f0f9ff", 
+              borderRadius: "4px",
+              fontSize: "12px",
+              color: "#0369a1",
+              display: "flex",
+              justifyContent: "space-between"
+            }}>
+              <span><strong>Range:</strong> ₹{chart.min} - ₹{chart.max}</span>
+              <span><strong>Current Trend:</strong> {parseFloat(chart.max) > parseFloat(chart.min) * 1.05 ? "📈 Upward" : parseFloat(chart.max) < parseFloat(chart.min) * 0.95 ? "📉 Downward" : "➡️ Stable"}</span>
             </div>
           </div>
         ) : (

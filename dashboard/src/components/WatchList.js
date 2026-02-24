@@ -1,4 +1,5 @@
 import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
 
@@ -131,6 +132,7 @@ const WatchListItem = ({ stock }) => {
 
 const WatchListActions = ({ uid }) => {
   const generalContext = useContext(GeneralContext);
+  const navigate = useNavigate();
 
   const handleBuyClick = () => {
     generalContext.openBuyWindow(uid);
@@ -138,6 +140,11 @@ const WatchListActions = ({ uid }) => {
 
   const handleSellClick = () => {
     generalContext.openSellWindow(uid);
+  };
+
+  const handleAnalyticsClick = () => {
+    // Navigate to AI prediction page with pre-filled symbol
+    navigate("/ai", { state: { symbol: uid, autoFetch: true } });
   };
 
   return (
@@ -148,26 +155,24 @@ const WatchListActions = ({ uid }) => {
           placement="top"
           arrow
           TransitionComponent={Grow}
-          onClick={handleBuyClick}
         >
-          <button className="buy">Buy</button>
+          <button className="buy" onClick={handleBuyClick}>Buy</button>
         </Tooltip>
         <Tooltip
           title="Sell (S)"
           placement="top"
           arrow
           TransitionComponent={Grow}
-          onClick={handleSellClick}
         >
-          <button className="sell">Sell</button>
+          <button className="sell" onClick={handleSellClick}>Sell</button>
         </Tooltip>
         <Tooltip
-          title="Analytics (A)"
+          title="AI Forecast (A)"
           placement="top"
           arrow
           TransitionComponent={Grow}
         >
-          <button className="action">
+          <button className="action" onClick={handleAnalyticsClick}>
             <BarChartOutlined className="icon" />
           </button>
         </Tooltip>

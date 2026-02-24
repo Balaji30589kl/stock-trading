@@ -1,7 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const PredictionForm = ({ onSearch, loading }) => {
-  const [symbol, setSymbol] = useState("");
+const PredictionForm = ({ onSearch, loading, initialSymbol = "" }) => {
+  const [symbol, setSymbol] = useState(initialSymbol);
+
+  // Update symbol when initialSymbol prop changes
+  useEffect(() => {
+    if (initialSymbol) {
+      setSymbol(initialSymbol);
+    }
+  }, [initialSymbol]);
 
   const handleChange = (e) => {
     setSymbol(e.target.value.toUpperCase().slice(0, 15));

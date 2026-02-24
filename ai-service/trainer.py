@@ -27,10 +27,13 @@ def train_model(
     x_train: np.ndarray,
     y_train: np.ndarray,
     seed: int = DEFAULT_SEED,
-    epochs: int = 15,
+    epochs: int = 50,  # Increased max epochs since early stopping will decide
     batch_size: int = 64,
     lr: float = 0.001,
+    patience: int = 15,  # Increased from 10 - allows more fluctuation tolerance
+    validation_split: float = 0.1,  # Reduced from 0.15 - more training data
 ) -> LSTMRegressor:
+    
     device = torch.device("cpu")
     torch.set_num_threads(1)
     set_deterministic_seed(seed)
@@ -38,26 +41,87 @@ def train_model(
     model = LSTMRegressor()
     model.to(device)
 
-    x_tensor = torch.tensor(x_train, dtype=torch.float32).unsqueeze(-1).to(device)
-    y_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(-1).to(device)
+    # Split into train and validation sets
+    n_samples = len(x_train)
+    n_val = int(n_samples * validation_split)
+    n_train = n_samples - n_val
+
+    # Use last 10% as validation (temporal order matters for time series)
+    x_train_split = x_train[:n_train]
+    y_train_split = y_train[:n_train]
+    x_val_split = x_train[n_train:]
+    y_val_split = y_train[n_train:]
+
+    # Convert to tensors
+    x_train_tensor = torch.tensor(x_train_split, dtype=torch.float32).unsqueeze(-1).to(device)
+    y_train_tensor = torch.tensor(y_train_split, dtype=torch.float32).unsqueeze(-1).to(device)
+    x_val_tensor = torch.tensor(x_val_split, dtype=torch.float32).unsqueeze(-1).to(device)
+    y_val_tensor = torch.tensor(y_val_split, dtype=torch.float32).unsqueeze(-1).to(device)
 
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    model.train()
-    for _ in range(epochs):
-        perm = torch.randperm(x_tensor.size(0))
-        for i in range(0, x_tensor.size(0), batch_size):
+    # Early stopping variables
+    best_val_loss = float('inf')
+    best_model_state = None
+    patience_counter = 0
+
+    print(f"\n📊 Training with Early Stopping (patience={patience})")
+    print(f"Train samples: {n_train}, Validation samples: {n_val}")
+    print("-" * 60)
+
+    for epoch in range(epochs):
+        # Training phase
+        model.train()
+        train_loss = 0.0
+        perm = torch.randperm(x_train_tensor.size(0))
+        
+        for i in range(0, x_train_tensor.size(0), batch_size):
             idx = perm[i : i + batch_size]
-            batch_x = x_tensor[idx]
-            batch_y = y_tensor[idx]
+            batch_x = x_train_tensor[idx]
+            batch_y = y_train_tensor[idx]
 
             optimizer.zero_grad()
             output = model(batch_x)
             loss = criterion(output, batch_y)
             loss.backward()
             optimizer.step()
+            
+            train_loss += loss.item()
 
+        train_loss /= (x_train_tensor.size(0) / batch_size)
+
+        # Validation phase
+        model.eval()
+        with torch.no_grad():
+            val_output = model(x_val_tensor)
+            val_loss = criterion(val_output, y_val_tensor).item()
+
+        # Print progress
+        status = ""
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_model_state = model.state_dict().copy()
+            patience_counter = 0
+            status = "✓ Best"
+        else:
+            patience_counter += 1
+            status = f"  ({patience_counter}/{patience})"
+
+        print(f"Epoch {epoch+1:2d}/{epochs} | Train Loss: {train_loss:.6f} | Val Loss: {val_loss:.6f} {status}")
+
+        # Early stopping check
+        if patience_counter >= patience:
+            print(f"\n🛑 Early stopping triggered at epoch {epoch+1}")
+            print(f"Best validation loss: {best_val_loss:.6f}")
+            break
+
+    # Restore best model
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print(f"✅ Restored model from best epoch (val_loss={best_val_loss:.6f})")
+    
+    print("-" * 60)
     return model
 
 

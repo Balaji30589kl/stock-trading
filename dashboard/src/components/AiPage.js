@@ -1,13 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "../api/axios";
 import PredictionForm from "./PredictionForm";
 import PredictionResult from "./PredictionResult";
 
 const AiPage = () => {
+  const location = useLocation();
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastSymbol, setLastSymbol] = useState(null);
+  const [initialSymbol, setInitialSymbol] = useState("");
+
+  // Auto-trigger forecast if symbol comes from Analytics button
+  useEffect(() => {
+    if (location.state?.symbol) {
+      setInitialSymbol(location.state.symbol);
+      if (location.state?.autoFetch) {
+        handleSearch(location.state.symbol);
+      }
+    }
+  }, [location.state?.symbol, location.state?.autoFetch]);
 
   const handleSearch = async (symbol) => {
     if (!symbol || symbol.trim().length === 0) {
@@ -49,7 +62,7 @@ const AiPage = () => {
       </div>
 
       <div className="section">
-        <PredictionForm onSearch={handleSearch} loading={loading} />
+        <PredictionForm onSearch={handleSearch} loading={loading} initialSymbol={initialSymbol} />
 
         {loading && (
           <div className="loading-state">

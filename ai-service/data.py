@@ -9,17 +9,19 @@ DEFAULT_PERIOD = "2y"
 
 
 def fetch_close_series(symbol: str, period: str = DEFAULT_PERIOD) -> pd.Series:
-    df = yf.download(symbol, period=period, interval="1d", progress=False)
-    if df.empty:
-        raise ValueError("No data returned for symbol")
-    
-    # Handle MultiIndex columns from yfinance
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-    
-    if "Close" not in df.columns:
-        raise ValueError("No data returned for symbol")
-    return df["Close"].dropna()
+    try:
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            raise ValueError("No data returned for symbol")
+        
+        if "Close" not in df.columns:
+            raise ValueError("No data returned for symbol")
+        
+        return df["Close"].dropna()
+    except Exception as e:
+        raise ValueError(f"Unable to fetch data for symbol '{symbol}'. Please check if the symbol is valid and try again.")
 
 
 def create_sequences(values: np.ndarray, lookback: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -86,31 +88,33 @@ def prepare_data(symbol: str, lookback: int, period: str = DEFAULT_PERIOD) -> Di
 
 def fetch_stock_name(symbol: str) -> str | None:
     try:
-        info = yf.Ticker(symbol).info
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        return info.get("shortName") or info.get("longName")
     except Exception:
         return None
-    return info.get("shortName") or info.get("longName")
 
 
 def fetch_history(symbol: str, period: str = "6mo") -> list[Dict[str, object]]:
-    df = yf.download(symbol, period=period, interval="1d", progress=False)
-    if df.empty:
-        return []
-    
-    # Handle MultiIndex columns from yfinance
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-    
-    if "Close" not in df.columns:
-        return []
+    try:
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            return []
+        
+        if "Close" not in df.columns:
+            return []
 
-    closes = df["Close"].dropna()
-    history = []
-    for idx, value in closes.items():
-        history.append(
-            {
-                "date": idx.date().isoformat(),
-                "close": float(round(value, 2)),
-            }
-        )
-    return history
+        closes = df["Close"].dropna()
+        history = []
+        for idx, value in closes.items():
+            history.append(
+                {
+                    "date": idx.date().isoformat(),
+                    "close": float(round(value, 2)),
+                }
+            )
+        return history
+    except Exception:
+        return []

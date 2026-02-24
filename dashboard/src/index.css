@@ -261,6 +261,18 @@ code {
   border-radius: 6px;
 }
 
+.professional-chart {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.professional-chart text {
+  user-select: none;
+}
+
 .chart-labels {
   display: flex;
   justify-content: space-between;
